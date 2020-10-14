@@ -246,8 +246,8 @@ kms_plate_detector_init (KmsPlateDetector * platedetector)
     return;
   }*/
 
-  platedetector->priv->handle->Init(NULL, "mon", OEM_LSTM_ONLY);
-  platedetector->priv->handle->SetPageSegMode(PSM_SINGLE_LINE);
+  platedetector->priv->handle->Init(NULL, "mon", tesseract::OEM_LSTM_ONLY);
+  platedetector->priv->handle->SetPageSegMode(tesseract::PSM_SINGLE_LINE);
 
   //TessBaseAPISetPageSegMode (platedetector->priv->handle, PSM_SINGLE_LINE);
 
@@ -1261,8 +1261,7 @@ kms_plate_detector_read_characters (KmsPlateDetector * platedetector,
 
 
     platedetector->priv->handle->SetImage((unsigned char *) imAux2->imageData, imAux2->width,
-                                                  imAux2->height, (imAux2->depth / 8) / imAux2->nChannels,
-                                                  imAux2->widthStep);
+                                                  imAux2->height, (imAux2->depth / 8) / imAux2->nChannels, imAux2->widthStep);
 
     ocrResultAux2 =platedetector->priv->handle->GetUTF8Text();
 

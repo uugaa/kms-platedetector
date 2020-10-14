@@ -51,7 +51,7 @@ find_package(LibTesseract REQUIRED)
 
 set (GST_REQUIRED 1.5.0)
 set (GLIB_REQUIRED 2.38)
-set (OPENCV_REQUIRED 2.0.0)
+set (OPENCV_REQUIRED 3.0.0)
 
 find_package(PkgConfig)
 pkg_check_modules(GSTREAMER REQUIRED gstreamer-1.5>=${GST_REQUIRED})

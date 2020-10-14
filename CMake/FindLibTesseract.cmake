@@ -6,7 +6,7 @@
 #  TESSERACT_LIBRARIES - the libraries needed to use LibTesseract
 
 find_path(TESSERACT_INCLUDE_DIRS
-    NAMES tesseract/capi.h
+    NAMES tesseract/baseapi.h
 )
 
 find_library(TESSERACT_LIBRARIES
