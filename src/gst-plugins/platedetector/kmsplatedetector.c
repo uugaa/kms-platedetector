@@ -22,7 +22,8 @@
 #include <locale.h>
 #include <opencv/cv.h>
 #include <opencv/highgui.h>
-#include <tesseract/capi.h>
+#include <tesseract/baseapi.h>
+//#include <tesseract/capi.h>
 
 #include <math.h>
 #include <stdlib.h> // setenv(), requires POSIX.1-2001: -D_POSIX_C_SOURCE=200112L
@@ -64,7 +65,8 @@ cvRound (double value)
 #define NULL_PLATE "---------"
 #define DEFAULT_CHARACTER_PROPORTION ((int) 100)
 #define PLATE_NUMBERS "0123456789"
-#define PLATE_LETTERS "AEIOUBCDFGHJKLMNPQRSTVWXYZ"
+//#define PLATE_LETTERS "AEIOUBCDFGHJKLMNPQRSTVWXYZ"
+#define PLATE_LETTERS "АБВГДЕЁЖЗИЙКЛМНОӨПРСТУҮФХЦЧШЩЪЫЬЭЮЯ"
 #define MIN_CHARACTERS_AMOUNT ((int) 6)
 #define MARGIN_3 ((int) 3)
 #define MARGIN_10 ((int) 10)
@@ -226,11 +228,11 @@ kms_plate_detector_init (KmsPlateDetector * platedetector)
 
   platedetector->priv->cvImage = NULL;
   platedetector->priv->preprocessingType = PREPROCESSING_ONE;
-  platedetector->priv->handle = TessBaseAPICreate ();
-  setlocale (LC_NUMERIC, "C");
+  platedetector->priv->handle = new tesseract::TessBaseAPI();
+  /*setlocale (LC_NUMERIC, "C");
   setenv (TESSDATA_PREFIX, TESSERAC_PREFIX_DEFAULT, FALSE);
-  GST_DEBUG (TESSDATA_PREFIX ": %s", getenv (TESSDATA_PREFIX));
-  ret_value =
+  GST_DEBUG (TESSDATA_PREFIX ": %s", getenv (TESSDATA_PREFIX));*/
+  /*ret_value =
       TessBaseAPIInit3 (platedetector->priv->handle, getenv (TESSDATA_PREFIX),
       "plateLanguage");
 
@@ -242,8 +244,14 @@ kms_plate_detector_init (KmsPlateDetector * platedetector)
     platedetector->priv->handle = NULL;
 
     return;
-  }
-  TessBaseAPISetPageSegMode (platedetector->priv->handle, PSM_SINGLE_LINE);
+  }*/
+
+  platedetector->priv->handle->Init(NULL, "mon", OEM_LSTM_ONLY);
+  platedetector->priv->handle->SetPageSegMode(PSM_SINGLE_LINE);
+
+  //TessBaseAPISetPageSegMode (platedetector->priv->handle, PSM_SINGLE_LINE);
+
+
   kms_plate_detector_plate_store_initialization (platedetector);
   platedetector->priv->storePosition = 0;
   platedetector->priv->plateRepetition = 0;
@@ -347,7 +355,7 @@ kms_plate_detector_finalize (GObject * object)
   GST_DEBUG_OBJECT (platedetector, "finalize");
 
   kms_plate_detector_release_images (platedetector);
-  TessBaseAPIDelete (platedetector->priv->handle);
+  platedetector->priv->handle->End();
 
   G_OBJECT_CLASS (kms_plate_detector_parent_class)->finalize (object);
 }
@@ -943,15 +951,12 @@ kms_plate_detector_select_tesseract_whitelist (KmsPlateDetector * platedetector,
     int d, TessBaseAPI * handle, int initialPosition, int *numbersCounter)
 {
   if (d < initialPosition) {
-    TessBaseAPISetVariable (platedetector->priv->handle,
-        "tessedit_char_whitelist", PLATE_LETTERS);
+    platedetector->priv->handle->SetVariable("tessedit_char_whitelist", PLATE_LETTERS);
   } else if ((d >= initialPosition) && (*numbersCounter < 4)) {
-    TessBaseAPISetVariable (platedetector->priv->handle,
-        "tessedit_char_whitelist", PLATE_NUMBERS);
+    platedetector->priv->handle->SetVariable("tessedit_char_whitelist", PLATE_NUMBERS);
     *numbersCounter = *numbersCounter + 1;
   } else {
-    TessBaseAPISetVariable (platedetector->priv->handle,
-        "tessedit_char_whitelist", PLATE_LETTERS);
+    platedetector->priv->handle->SetVariable("tessedit_char_whitelist", PLATE_LETTERS);
   }
 }
 
@@ -1240,28 +1245,31 @@ kms_plate_detector_read_characters (KmsPlateDetector * platedetector,
       kms_plate_detector_show_proccesed_characters (platedetector,
           imAuxRGB2, position, data);
     }
-    TessBaseAPISetImage (platedetector->priv->handle,
-        (unsigned char *) imAux->imageData, imAux->width,
-        imAux->height, (imAux->depth / 8) / imAux->nChannels, imAux->widthStep);
-    ocrResultAux1 = TessBaseAPIGetUTF8Text (platedetector->priv->handle);
-    kms_plate_detector_chop_char (ocrResultAux1);
-    confidenceRate1 = TessBaseAPIMeanTextConf (platedetector->priv->handle);
 
-    TessBaseAPIClear (platedetector->priv->handle);
+     platedetector->priv->handle->SetImage((unsigned char *) imAux->imageData, imAux->width,
+                                                   imAux->height, (imAux->depth / 8) / imAux->nChannels, imAux->widthStep);
+
+    //ocrResultAux1 = TessBaseAPIGetUTF8Text (platedetector->priv->handle);
+    ocrResultAux1 = platedetector->priv->handle->GetUTF8Text();
+
+    kms_plate_detector_chop_char (ocrResultAux1);
+    confidenceRate1 = platedetector->priv->handle->MeanTextConf();
+
+    platedetector->priv->handle->Clear();
 
     sprintf (textConf1, "Conf:%d", (int) confidenceRate1);
 
-    TessBaseAPISetImage (platedetector->priv->handle,
-        (unsigned char *) imAux2->imageData, imAux2->width,
-        imAux2->height, (imAux2->depth / 8) / imAux2->nChannels,
-        imAux2->widthStep);
 
-    ocrResultAux2 = TessBaseAPIGetUTF8Text (platedetector->priv->handle);
+    platedetector->priv->handle->SetImage((unsigned char *) imAux2->imageData, imAux2->width,
+                                                  imAux2->height, (imAux2->depth / 8) / imAux2->nChannels,
+                                                  imAux2->widthStep);
+
+    ocrResultAux2 =platedetector->priv->handle->GetUTF8Text();
 
     kms_plate_detector_chop_char (ocrResultAux2);
-    confidenceRate2 = TessBaseAPIMeanTextConf (platedetector->priv->handle);
+    confidenceRate2 = platedetector->priv->handle->MeanTextConf();
 
-    TessBaseAPIClear (platedetector->priv->handle);
+    platedetector->priv->handle->Clear();
 
     sprintf (textConf2, "Conf:%d", (int) confidenceRate2);
 
